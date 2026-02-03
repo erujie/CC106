@@ -13,6 +13,9 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
 
+    private boolean[] mAnswered;
+    private int mScore = 0;
+
     private static final String TAG = "QuizActivity";
     private static final String KEY_INDEX = "index";
 
@@ -38,6 +41,9 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         Log.d(TAG, "onCreate(Bundle) called");
         setContentView(R.layout.activity_main);
+
+        mAnswered = new boolean[mQuestionBank.length];
+
 
         if (savedInstanceState != null) {
             mCurrentIndex = savedInstanceState.getInt(KEY_INDEX, 0);
@@ -129,21 +135,53 @@ public class MainActivity extends AppCompatActivity {
     private void updateQuestion() {
         int question = mQuestionBank[mCurrentIndex].getTextResId();
         mQuestionTextView.setText(question);
+
+        boolean answered = mAnswered[mCurrentIndex];
+        mTrueButton.setEnabled(!answered);
+        mFalseButton.setEnabled(!answered);
+    }
+
+    private void checkIfQuizFinished() {
+        for (boolean answered : mAnswered) {
+            if (!answered) {
+                return;
+            }
+        }
+
+        int percentage = (int) ((mScore * 100.0f) / mQuestionBank.length);
+
+        Toast.makeText(
+                this,
+                "Your score: " + percentage + "%",
+                Toast.LENGTH_LONG
+        ).show();
     }
 
     private void checkAnswer(boolean userPressedTrue) {
+
+        if (mAnswered[mCurrentIndex]) {
+            return;
+        }
         boolean answerIsTrue = mQuestionBank[mCurrentIndex].isAnswerTrue();
 
-        int messageResId = 0;
+        int messageResId;
         if (userPressedTrue == answerIsTrue) {
             messageResId = R.string.correct_toast;
+            mScore++;
         } else {
             messageResId = R.string.incorrect_toast;
         }
 
+        mAnswered[mCurrentIndex] = true;
+
+        mTrueButton.setEnabled(false);
+        mFalseButton.setEnabled(false);
+
         Toast toast = Toast.makeText(this, messageResId, Toast.LENGTH_SHORT);
         toast.setGravity(Gravity.TOP, 0, 0);
         toast.show();
+
+        checkIfQuizFinished();
     }
 
 
