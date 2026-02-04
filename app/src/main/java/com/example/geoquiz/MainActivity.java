@@ -21,6 +21,11 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "QuizActivity";
     private static final String KEY_INDEX = "index";
     private static final int REQUEST_CODE_CHEAT = 0;
+    private static final String KEY_SCORE = "score";
+    private static final String KEY_ANSWERED = "answered";
+    private static final String KEY_CHEATER = "cheater";
+    private static final String KEY_CHEATED = "cheated";
+
 
     private Button mTrueButton;
     private Button mFalseButton;
@@ -39,7 +44,6 @@ public class MainActivity extends AppCompatActivity {
     };
 
     private int mCurrentIndex = 0;
-    private boolean mIsCheater;
 
 
     @Override
@@ -48,12 +52,21 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "onCreate(Bundle) called");
         setContentView(R.layout.activity_main);
 
-        mAnswered = new boolean[mQuestionBank.length];
-
 
         if (savedInstanceState != null) {
             mCurrentIndex = savedInstanceState.getInt(KEY_INDEX, 0);
+            mScore = savedInstanceState.getInt(KEY_SCORE, 0);
+            mAnswered = savedInstanceState.getBooleanArray(KEY_ANSWERED);
+            boolean[] cheated = savedInstanceState.getBooleanArray(KEY_CHEATED);
+            if (cheated != null) {
+                for (int i = 0; i < cheated.length; i++) {
+                    mQuestionBank[i].setCheated(cheated[i]);
+                }
+            }
+        } else {
+            mAnswered = new boolean[mQuestionBank.length];
         }
+
 
         mQuestionTextView = (TextView) findViewById(R.id.question_text_view);
         mQuestionTextView.setOnClickListener(new View.OnClickListener() {
@@ -86,7 +99,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 mCurrentIndex = (mCurrentIndex + 1) % mQuestionBank.length;
-                mIsCheater = false;
                 updateQuestion();
             }
         });
@@ -119,14 +131,14 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (resultCode != Activity.RESULT_OK) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode != REQUEST_CODE_CHEAT || resultCode != Activity.RESULT_OK) {
             return;
         }
-        if (requestCode == REQUEST_CODE_CHEAT) {
-            if (data == null) {
-                return;
-            }
-            mIsCheater = CheatActivity.wasAnswerShown(data);
+
+        if (data != null && CheatActivity.wasAnswerShown(data)) {
+            mQuestionBank[mCurrentIndex].setCheated(true);
         }
     }
 
@@ -151,7 +163,18 @@ public class MainActivity extends AppCompatActivity {
     public void onSaveInstanceState(Bundle savedInstanceState) {
         super.onSaveInstanceState(savedInstanceState);
         Log.i(TAG, "onSaveInstanceState");
-        savedInstanceState.putInt(KEY_INDEX, mCurrentIndex);
+        boolean[] cheated = new boolean[mQuestionBank.length];
+        savedInstanceState  .putInt(KEY_INDEX, mCurrentIndex);
+        savedInstanceState.putBooleanArray(KEY_CHEATED, cheated);
+        savedInstanceState.putInt(KEY_SCORE, mScore);
+        savedInstanceState.putBooleanArray(KEY_ANSWERED, mAnswered);
+
+
+        for (int i = 0; i < mQuestionBank.length; i++) {
+            cheated[i] = mQuestionBank[i].isCheated();
+        }
+
+        savedInstanceState.putBooleanArray(KEY_CHEATER, cheated);
     }
 
     @Override
@@ -199,7 +222,7 @@ public class MainActivity extends AppCompatActivity {
 
         int messageResId;
 
-        if (mIsCheater) {
+        if (mQuestionBank[mCurrentIndex].isCheated()) {
             messageResId = R.string.judgment_toast;
         } else {
             if (userPressedTrue == answerIsTrue) {
@@ -221,6 +244,9 @@ public class MainActivity extends AppCompatActivity {
 
         checkIfQuizFinished();
     }
+
+
+
 
 
 }
