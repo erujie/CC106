@@ -23,7 +23,6 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_CODE_CHEAT = 0;
     private static final String KEY_SCORE = "score";
     private static final String KEY_ANSWERED = "answered";
-    private static final String KEY_CHEATER = "cheater";
     private static final String KEY_CHEATED = "cheated";
 
 
@@ -57,10 +56,16 @@ public class MainActivity extends AppCompatActivity {
             mCurrentIndex = savedInstanceState.getInt(KEY_INDEX, 0);
             mScore = savedInstanceState.getInt(KEY_SCORE, 0);
             mAnswered = savedInstanceState.getBooleanArray(KEY_ANSWERED);
+
+            if (mAnswered == null) {
+                mAnswered = new boolean[mQuestionBank.length];
+            }
+
             boolean[] cheated = savedInstanceState.getBooleanArray(KEY_CHEATED);
             if (cheated != null) {
                 for (int i = 0; i < cheated.length; i++) {
                     mQuestionBank[i].setCheated(cheated[i]);
+                    Log.d(TAG, "Restored cheated[" + i + "] = " + cheated[i]);
                 }
             }
         } else {
@@ -163,18 +168,18 @@ public class MainActivity extends AppCompatActivity {
     public void onSaveInstanceState(Bundle savedInstanceState) {
         super.onSaveInstanceState(savedInstanceState);
         Log.i(TAG, "onSaveInstanceState");
-        boolean[] cheated = new boolean[mQuestionBank.length];
-        savedInstanceState  .putInt(KEY_INDEX, mCurrentIndex);
-        savedInstanceState.putBooleanArray(KEY_CHEATED, cheated);
+
+        savedInstanceState.putInt(KEY_INDEX, mCurrentIndex);
         savedInstanceState.putInt(KEY_SCORE, mScore);
         savedInstanceState.putBooleanArray(KEY_ANSWERED, mAnswered);
 
-
+        boolean[] cheated = new boolean[mQuestionBank.length];
         for (int i = 0; i < mQuestionBank.length; i++) {
             cheated[i] = mQuestionBank[i].isCheated();
+            Log.d(TAG, "Saving cheated[" + i + "] = " + cheated[i]);
         }
 
-        savedInstanceState.putBooleanArray(KEY_CHEATER, cheated);
+        savedInstanceState.putBooleanArray(KEY_CHEATED, cheated);
     }
 
     @Override
